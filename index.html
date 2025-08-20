@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Losowy podział na dwie drużyny</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111a2e; --muted:#7e8aa0; --accent:#8b5cf6; --accent2:#22d3ee; --ok:#22c55e; --err:#ef4444; --ring: 0 10px 40px rgba(139,92,246,.25);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Inter",system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,.12), transparent 60%),radial-gradient(800px 500px at 10% 110%, rgba(139,92,246,.14), transparent 60%),var(--bg);color:#e6eaf2}
+    .wrap{max-width:1100px;margin:40px auto;padding:0 20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .title{font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-.02em}
+    .subtitle{color:var(--muted)}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);backdrop-filter: blur(6px)}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+    .input-card{padding:18px}
+    label{font-size:14px;color:var(--muted);display:block;margin-bottom:8px}
+    textarea{width:100%;min-height:220px;resize:vertical;background:#0d1526;color:#e6eaf2;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;font-family:inherit}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:center}
+    .pill{background:#0d1526;border:1px solid rgba(255,255,255,.08);color:#cfd7e6;border-radius:999px;padding:8px 12px;font-size:14px}
+    button{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;font-weight:600;color:#0b1220;background:linear-gradient(180deg, var(--accent), #6d28d9);box-shadow:var(--ring);transition:transform .06s ease, filter .2s ease}
+    button:hover{filter:brightness(1.06)}
+    button:active{transform:translateY(1px)}
+    .btn-alt{background:linear-gradient(180deg, #1f2937, #111827);color:#cfd7e6;box-shadow:none;border:1px solid rgba(255,255,255,.08)}
+    .teams{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:700px){.teams{grid-template-columns:1fr}}
+    .team{padding:16px}
+    .team h3{margin:0 0 10px;font-size:18px}
+    .badge{font-size:12px;color:#0b1220;background:linear-gradient(180deg, var(--accent2), #0891b2);padding:4px 10px;border-radius:999px;display:inline-block;margin-left:8px}
+    .list{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+    .chip{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1526;border:1px solid rgba(255,255,255,.08);padding:10px 12px;border-radius:12px;opacity:0;transform:translateY(6px);animation:pop .35s forwards}
+    @keyframes pop{to{opacity:1;transform:translateY(0)}}
+    .small{font-size:12px;color:var(--muted)}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .notice{border-left:4px solid var(--accent2);padding:10px 12px;background:rgba(34,211,238,.08);border-radius:10px}
+    .footer{margin-top:22px;color:var(--muted);font-size:12px}
+    .copy{background:#0d1526;color:#cfd7e6;border:1px solid rgba(255,255,255,.08)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">Team Randomizer ⚡</div>
+        <div class="subtitle">Wklej listę osób → kliknij <b>Losuj</b> → gotowe dwie drużyny.</div>
+      </div>
+      <div class="toolbar">
+        <button id="drawBtn">Losuj</button>
+        <button class="btn-alt" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card input-card">
+        <label for="names">Osoby (po jednej w wierszu)</label>
+        <textarea id="names" placeholder="np.\nPatryk\nMIMEK\nGibby\nArek\nAdam\nVitus\n…"></textarea>
+        <div class="row">
+          <div class="pill">Drużyny: <b>2</b> (stałe)</div>
+          <div class="pill">Tryb: <b>równy podział</b></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn-alt" id="shuffleOnly">Wymieszaj listę</button>
+          <button class="btn-alt" id="sample10">Wstaw przykładowe 10</button>
+          <button class="copy" id="copyListBtn">Kopiuj listę</button>
+        </div>
+        <div class="footer small">Dane zapisywane w Twojej przeglądarce (localStorage). Brak wysyłki na serwer.</div>
+      </section>
+
+      <section class="card" style="padding:18px">
+        <div class="notice small">Wynik poniżej. Jeżeli liczba osób jest nieparzysta, jedna z drużyn może mieć o 1 osobę więcej.</div>
+        <div class="teams">
+          <div class="team card">
+            <h3>🔥 Drużyna A <span class="badge" id="countA">0</span></h3>
+            <ul id="teamA" class="list"></ul>
+            <div class="toolbar">
+              <button class="copy" id="copyA">Kopiuj A</button>
+              <button class="btn-alt" id="downloadA">Pobierz A (.txt)</button>
+            </div>
+          </div>
+          <div class="team card">
+            <h3>❄️ Drużyna B <span class="badge" id="countB">0</span></h3>
+            <ul id="teamB" class="list"></ul>
+            <div class="toolbar">
+              <button class="copy" id="copyB">Kopiuj B</button>
+              <button class="btn-alt" id="downloadB">Pobierz B (.txt)</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="footer small">Made with ❤️ — brak zewnętrznych zależności. Działa offline.</div>
+  </div>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+
+    const defaultTen = [
+      "Patryk","Mimek","Gibby","Arek","Adam","Vitus","Kuba","Ola","Zosia","Bartek"
+    ];
+
+    function save(){ localStorage.setItem("teamRandomizer_names", $("names").value); }
+    function load(){ const v = localStorage.getItem("teamRandomizer_names"); if(v!==null) $("names").value = v; else $("names").value = defaultTen.join("\n"); }
+
+    function cleanNames(raw){
+      return raw.split(/\n|,|;|\t/).map(s=>s.trim()).filter(Boolean);
+    }
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    function splitTwoTeams(list){
+      const half = Math.ceil(list.length/2);
+      return [ list.slice(0, half), list.slice(half) ];
+    }
+
+    function renderTeam(ul, names){
+      ul.innerHTML = "";
+      names.forEach((n, i)=>{
+        const li = document.createElement('li');
+        li.className = 'chip';
+        li.innerHTML = `<span>${i+1}. ${escapeHtml(n)}</span>`;
+        ul.appendChild(li);
+      });
+    }
+
+    function escapeHtml(str){
+      return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    function copyText(text){
+      navigator.clipboard.writeText(text).then(()=>{
+        toast('Skopiowano ✅');
+      }).catch(()=>{
+        alert('Nie udało się skopiować.');
+      });
+    }
+
+    function download(filename, text){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], {type:'text/plain'}));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function toast(msg){
+      const t = document.createElement('div');
+      t.textContent = msg; t.style.position='fixed'; t.style.bottom='20px'; t.style.left='50%'; t.style.transform='translateX(-50%)'; t.style.background='linear-gradient(180deg,var(--accent2),#0284c7)'; t.style.color='#0b1220'; t.style.padding='10px 14px'; t.style.borderRadius='999px'; t.style.fontWeight='700'; t.style.boxShadow='var(--ring)';
+      document.body.appendChild(t);
+      setTimeout(()=>t.remove(), 1300);
+    }
+
+    function draw(){
+      const list = cleanNames($("names").value);
+      if(list.length < 2){ toast('Dodaj przynajmniej 2 osoby'); return; }
+      const mixed = shuffle(list);
+      const [A, B] = splitTwoTeams(mixed);
+      renderTeam($("teamA"), A);
+      renderTeam($("teamB"), B);
+      $("countA").textContent = A.length; $("countB").textContent = B.length;
+      save();
+    }
+
+    $("drawBtn").onclick = draw;
+    $("resetBtn").onclick = ()=>{ $("names").value = ''; $("teamA").innerHTML=''; $("teamB").innerHTML=''; $("countA").textContent='0'; $("countB").textContent='0'; localStorage.removeItem('teamRandomizer_names'); };
+    $("shuffleOnly").onclick = ()=>{ const arr = shuffle(cleanNames($("names").value)); $("names").value = arr.join('\n'); save(); };
+    $("sample10").onclick = ()=>{ $("names").value = defaultTen.join('\n'); save(); };
+    $("copyListBtn").onclick = ()=> copyText($("names").value);
+
+    $("copyA").onclick = ()=>{
+      const t = Array.from($("teamA").querySelectorAll('.chip span')).map(el=>el.textContent.replace(/^\d+\.\s*/,''));
+      copyText(t.join('\n'));
+    }
+    $("copyB").onclick = ()=>{
+      const t = Array.from($("teamB").querySelectorAll('.chip span')).map(el=>el.textContent.replace(/^\d+\.\s*/,''));
+      copyText(t.join('\n'));
+    }
+    $("downloadA").onclick = ()=>{
+      const t = Array.from($("teamA").querySelectorAll('.chip span')).map(el=>el.textContent.replace(/^\d+\.\s*/,''));
+      download('druzyna_A.txt', t.join('\n'));
+    }
+    $("downloadB").onclick = ()=>{
+      const t = Array.from($("teamB").querySelectorAll('.chip span')).map(el=>el.textContent.replace(/^\d+\.\s*/,''));
+      download('druzyna_B.txt', t.join('\n'));
+    }
+
+    $("names").addEventListener('input', save);
+
+    load();
+    draw();
+  </script>
+</body>
+</html>
